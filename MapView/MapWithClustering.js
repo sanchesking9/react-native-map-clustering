@@ -42,6 +42,7 @@ export default class MapWithClustering extends Component {
         this.calculateClustersForMap(region);
       }
     }
+    this.props.onRegionChangeComplete(region);
   };
 
   createMarkersOnMap = () => {
@@ -144,7 +145,7 @@ export default class MapWithClustering extends Component {
   removeChildrenFromProps = (props) => {
     const newProps = {};
     Object.keys(props).forEach((key) => {
-      if (key !== 'children') {
+      if (key !== 'children' && key !== 'region') {
         newProps[key] = props[key];
       }
     });
@@ -156,7 +157,7 @@ export default class MapWithClustering extends Component {
       <MapView
         {...this.removeChildrenFromProps(this.props)}
         ref={(ref) => { this.root = ref; }}
-        region={this.state.currentRegion}
+        initialRegion={this.state.currentRegion}
         onRegionChangeComplete={this.onRegionChangeComplete}
       >
         {this.state.clusteredMarkers}
@@ -176,6 +177,7 @@ MapWithClustering.propTypes = {
   clusterBorderWidth: PropTypes.number,
   clusterTextSize: PropTypes.number,
   onClusterPress: PropTypes.func,
+  onRegionChangeComplete: PropTypes.func
 };
 
 const totalSize = num => (Math.sqrt((h(100) * h(100)) + (w(100) * w(100))) * num) / 100;
@@ -189,4 +191,5 @@ MapWithClustering.defaultProps = {
   clusterBorderWidth: 1,
   clusterTextSize: totalSize(2.4),
   onClusterPress: () => {},
+  onRegionChangeComplete: () => {},
 };
