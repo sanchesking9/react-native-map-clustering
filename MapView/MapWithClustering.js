@@ -26,11 +26,11 @@ export default class MapWithClustering extends Component {
   };
 
   componentDidMount() {
-    this.createMarkersOnMap();
+    this.createMarkersOnMap(this.props.children);
   }
 
-  componentWillReceiveProps() {
-    this.createMarkersOnMap();
+  componentWillReceiveProps(next) {
+    this.createMarkersOnMap(next.children);
   }
 
   onRegionChangeComplete = (region) => {
@@ -45,11 +45,11 @@ export default class MapWithClustering extends Component {
     this.props.onRegionChangeComplete(region);
   };
 
-  createMarkersOnMap = () => {
+  createMarkersOnMap = (children) => {
     const markers = [];
     const otherChildren = [];
 
-    React.Children.forEach(this.props.children, (marker) => {
+    React.Children.forEach(children, (marker) => {
       if (marker && marker.props && marker.props.coordinate && !marker.props.notCluster) {
         markers.push({
           marker,
