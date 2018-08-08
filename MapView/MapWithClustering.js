@@ -74,7 +74,6 @@ export default class MapWithClustering extends Component {
         minZoom: 1,
       });
     }
-    this.superCluster.load(markers);
 
     this.setState({
       markers,
@@ -116,24 +115,39 @@ export default class MapWithClustering extends Component {
 
   calculateClustersForMap = async (currentRegion = this.state.currentRegion) => {
     let clusteredMarkers = [];
+    let markers = {};
 
-    if (this.props.clustering && this.superCluster) {
-      const bBox = this.calculateBBox(this.state.currentRegion);
-      let zoom = this.getBoundsZoomLevel(bBox, { height: h(100), width: w(100) });
-      const clusters = await this.superCluster.getClusters([bBox[0], bBox[1], bBox[2], bBox[3]], zoom);
+    for (var i = 0; i < this.state.markers.length; i++) {
+      let thisMarker = this.state.markers[i];
+      if (!markers[thisMarker.marker.props.country]) {
+        markers[thisMarker.marker.props.country] = [thisMarker];
+        continue;
+      }
+      markers[thisMarker.marker.props.country].push(thisMarker);
+    }
 
-      clusteredMarkers = clusters.map(cluster => (<CustomMarker
-        pointCount={cluster.properties.point_count}
-        clusterId={cluster.properties.cluster_id}
-        geometry={cluster.geometry}
-        clusterStyle={this.state.clusterStyle}
-        clusterTextStyle={this.state.clusterTextStyle}
-        marker={cluster.properties.point_count === 0 ? cluster.marker : null}
-        key={JSON.stringify(cluster.geometry) + cluster.properties.cluster_id + cluster.properties.point_count}
-        onClusterPress={this.props.onClusterPress}
-      />));
-    } else {
-      clusteredMarkers = this.state.markers.map(marker => marker.marker);
+    for (let key in markers) {
+      let list = markers[key];
+      this.superCluster.load(list);
+
+      if (this.props.clustering && this.superCluster) {
+        const bBox = this.calculateBBox(this.state.currentRegion);
+        let zoom = this.getBoundsZoomLevel(bBox, { height: h(100), width: w(100) });
+        const clusters = await this.superCluster.getClusters([bBox[0], bBox[1], bBox[2], bBox[3]], zoom);
+
+        clusteredMarkers = clusteredMarkers.concat(clusters.map(cluster => (<CustomMarker
+          pointCount={cluster.properties.point_count}
+          clusterId={cluster.properties.cluster_id}
+          geometry={cluster.geometry}
+          clusterStyle={this.state.clusterStyle}
+          clusterTextStyle={this.state.clusterTextStyle}
+          marker={cluster.properties.point_count === 0 ? cluster.marker : null}
+          key={JSON.stringify(cluster.geometry) + cluster.properties.cluster_id + cluster.properties.point_count}
+          onClusterPress={this.props.onClusterPress}
+        />)));
+      } else {
+        clusteredMarkers = clusteredMarkers.concat(list.map(marker => marker.marker));
+      }
     }
 
     this.setState({
