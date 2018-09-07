@@ -1,11 +1,11 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import MapView from 'react-native-maps';
 import { width as w, height as h } from 'react-native-dimension';
 import SuperCluster from 'supercluster';
 import CustomMarker from './CustomMarker';
 
-export default class MapWithClustering extends Component {
+export default class MapWithClustering extends PureComponent {
   state = {
     currentRegion: this.props.region,
     clusterStyle: {
@@ -117,7 +117,7 @@ export default class MapWithClustering extends Component {
     let clusteredMarkers = [];
     let markers = {};
 
-    for (var i = 0; i < this.state.markers.length; i++) {
+    for (let i = 0; i < this.state.markers.length; i++) {
       let thisMarker = this.state.markers[i];
       if (!markers[thisMarker.marker.props.country]) {
         markers[thisMarker.marker.props.country] = [thisMarker];
