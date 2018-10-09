@@ -24,6 +24,7 @@ export default class MapWithClustering extends PureComponent {
       fontWeight: 'bold',
     },
   };
+  currentRegion = this.props.region;
 
   componentDidMount() {
     this.createMarkersOnMap(this.props.children);
@@ -34,6 +35,7 @@ export default class MapWithClustering extends PureComponent {
   }
 
   onRegionChangeComplete = (region) => {
+    this.currentRegion = region;
     const { latitude, latitudeDelta, longitude, longitudeDelta } = this.state.currentRegion;
     if (region.longitudeDelta <= 80) {
       if ((Math.abs(region.latitudeDelta - latitudeDelta) > latitudeDelta / 8)
@@ -50,7 +52,7 @@ export default class MapWithClustering extends PureComponent {
     const otherChildren = [];
 
     React.Children.forEach(children, (marker) => {
-      if (marker && marker.props && marker.props.coordinate && !marker.props.notCluster) {
+      if (marker && marker.props && !marker.props.notCluster && marker.props.coordinate) {
         markers.push({
           marker,
           properties: { point_count: 0 },
@@ -74,6 +76,8 @@ export default class MapWithClustering extends PureComponent {
         minZoom: 1,
       });
     }
+
+    this.superCluster.load(markers);
 
     this.setState({
       markers,
@@ -113,29 +117,65 @@ export default class MapWithClustering extends PureComponent {
     return Math.min(latZoom, lngZoom, ZOOM_MAX);
   };
 
-  calculateClustersForMap = async (currentRegion = this.state.currentRegion) => {
+  // calculateClustersForMap = async (currentRegion = this.currentRegion) => {
+  //   let clusteredMarkers = [];
+  //   let markers = {};
+  //   this.props.onClusteringStart();
+  //
+  //   for (let i = 0; i < this.state.markers.length; i++) {
+  //     let thisMarker = this.state.markers[i];
+  //     if (!markers[thisMarker.marker.props.country]) {
+  //       markers[thisMarker.marker.props.country] = [thisMarker];
+  //       continue;
+  //     }
+  //     markers[thisMarker.marker.props.country].push(thisMarker);
+  //   }
+  //
+  //   for (let key in markers) {
+  //     let list = markers[key];
+  //     this.superCluster.load(list);
+  //
+  //     if (this.props.clustering && this.superCluster) {
+  //       const bBox = this.calculateBBox(currentRegion);
+  //       let zoom = this.getBoundsZoomLevel(bBox, { height: h(100), width: w(100) });
+  //       const clusters = await this.superCluster.getClusters([bBox[0], bBox[1], bBox[2], bBox[3]], zoom);
+  //
+  //       clusteredMarkers = clusteredMarkers.concat(clusters.map(cluster => (<CustomMarker
+  //         pointCount={cluster.properties.point_count}
+  //         clusterId={cluster.properties.cluster_id}
+  //         geometry={cluster.geometry}
+  //         clusterStyle={this.state.clusterStyle}
+  //         clusterTextStyle={this.state.clusterTextStyle}
+  //         marker={cluster.properties.point_count === 0 ? cluster.marker : null}
+  //         key={JSON.stringify(cluster.geometry) + cluster.properties.cluster_id + cluster.properties.point_count}
+  //         onClusterPress={this.props.onClusterPress}
+  //       />)));
+  //     } else {
+  //       clusteredMarkers = clusteredMarkers.concat(list.map(marker => marker.marker));
+  //     }
+  //   }
+  //
+  //   this.setState({
+  //     clusteredMarkers,
+  //     currentRegion,
+  //   }, () => {
+  //     this.props.onClusteringEnd();
+  //   });
+  // };
+
+  calculateClustersForMap = (currentRegion = this.state.currentRegion) => {
     let clusteredMarkers = [];
-    let markers = {};
 
-    for (let i = 0; i < this.state.markers.length; i++) {
-      let thisMarker = this.state.markers[i];
-      if (!markers[thisMarker.marker.props.country]) {
-        markers[thisMarker.marker.props.country] = [thisMarker];
-        continue;
-      }
-      markers[thisMarker.marker.props.country].push(thisMarker);
-    }
 
-    for (let key in markers) {
-      let list = markers[key];
-      this.superCluster.load(list);
+    if (this.props.clustering && this.superCluster) {
+      const bBox = this.calculateBBox(this.state.currentRegion);
+      let zoom = this.getBoundsZoomLevel(bBox, { height: h(100), width: w(100) });
+      const clusters = this.superCluster.getClusters([bBox[0], bBox[1], bBox[2], bBox[3]], zoom);
 
-      if (this.props.clustering && this.superCluster) {
-        const bBox = this.calculateBBox(this.state.currentRegion);
-        let zoom = this.getBoundsZoomLevel(bBox, { height: h(100), width: w(100) });
-        const clusters = await this.superCluster.getClusters([bBox[0], bBox[1], bBox[2], bBox[3]], zoom);
-
-        clusteredMarkers = clusteredMarkers.concat(clusters.map(cluster => (<CustomMarker
+      let cluster;
+      for (let i = 0, len = clusters.length; i < len; i++) {
+        cluster = clusters[i];
+        clusteredMarkers.push(<CustomMarker
           pointCount={cluster.properties.point_count}
           clusterId={cluster.properties.cluster_id}
           geometry={cluster.geometry}
@@ -144,11 +184,12 @@ export default class MapWithClustering extends PureComponent {
           marker={cluster.properties.point_count === 0 ? cluster.marker : null}
           key={JSON.stringify(cluster.geometry) + cluster.properties.cluster_id + cluster.properties.point_count}
           onClusterPress={this.props.onClusterPress}
-        />)));
-      } else {
-        clusteredMarkers = clusteredMarkers.concat(list.map(marker => marker.marker));
+        />)
       }
+    } else {
+      clusteredMarkers = this.state.markers.map(marker => marker.marker);
     }
+
 
     this.setState({
       clusteredMarkers,
@@ -191,7 +232,9 @@ MapWithClustering.propTypes = {
   clusterBorderWidth: PropTypes.number,
   clusterTextSize: PropTypes.number,
   onClusterPress: PropTypes.func,
-  onRegionChangeComplete: PropTypes.func
+  onRegionChangeComplete: PropTypes.func,
+  onClusteringStart: PropTypes.func,
+  onClusteringEnd: PropTypes.func
 };
 
 const totalSize = num => (Math.sqrt((h(100) * h(100)) + (w(100) * w(100))) * num) / 100;
@@ -206,4 +249,6 @@ MapWithClustering.defaultProps = {
   clusterTextSize: totalSize(2.4),
   onClusterPress: () => {},
   onRegionChangeComplete: () => {},
+  onClusteringStart: () => {},
+  onClusteringEnd: () => {}
 };

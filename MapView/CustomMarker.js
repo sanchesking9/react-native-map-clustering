@@ -10,6 +10,14 @@ export default class CustomMarker extends Component {
 
   render() {
     if (this.props.pointCount > 0) {
+      const font = {};
+      if (this.props.pointCount > 1000) {
+        font.fontSize = 16;
+      } else if (this.props.pointCount > 10000) {
+        font.fontSize = 14;
+      } else if (this.props.pointCount > 100000) {
+        font.fontSize = 12;
+      }
       return (
         <Marker
           coordinate={{
@@ -19,7 +27,7 @@ export default class CustomMarker extends Component {
           onPress={this.props.pointCount > 0 && this.props.onClusterPress}
         >
           <View style={this.props.clusterStyle}>
-            <Text style={this.props.clusterTextStyle}>
+            <Text style={[this.props.clusterTextStyle, font]}>
               {this.props.pointCount}
             </Text>
           </View>
